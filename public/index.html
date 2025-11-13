@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Lantern Space — Anonymous Venting</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#0f1724;
+      --muted:#9aa4b2;
+      --accent:#f78764;
+      --glass: rgba(255,255,255,0.03);
+      --success:#64d39a;
+      --danger:#ff6b6b;
+      --max-width:1100px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(247,135,100,0.06), transparent 10%),
+                  linear-gradient(180deg, #071022 0%, var(--bg) 100%);
+      color:#e6eef6;display:flex;align-items:center;justify-content:center;padding:40px 20px;
+    }
+    .app{width:100%;max-width:var(--max-width);display:grid;grid-template-columns:260px 1fr 360px;gap:20px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px;box-shadow:0 6px 30px rgba(3,6,15,0.6);}
+
+    /* Left: channels */
+    .channels h2{font-size:14px;margin:0 0 12px 0;color:var(--muted)}
+    .channel{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;cursor:pointer}
+    .channel:hover{background:var(--glass)}
+    .channel.active{background:linear-gradient(90deg, rgba(247,135,100,0.12), rgba(100,211,154,0.04));border:1px solid rgba(247,135,100,0.08)}
+    .channel .emoji{font-size:18px}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+    .brand h1{font-size:16px;margin:0}
+    .brand p{margin:0;font-size:12px;color:var(--muted)}
+
+    /* Feed */
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .compose{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:14px;border-radius:12px;display:flex;gap:12px;align-items:flex-start}
+    .compose textarea{flex:1;background:transparent;border:0;outline:none;color:inherit;resize:none;font-size:14px}
+    .btn{background:var(--accent);color:#071022;border:none;padding:8px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+
+    /* Post card */
+    .post{padding:14px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));border-radius:12px;margin-bottom:12px}
+    .meta{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .anon{background:linear-gradient(90deg,#111827,#0b1220);padding:8px 10px;border-radius:999px;font-weight:600;font-size:13px}
+    .time{color:var(--muted);font-size:12px}
+    .content{font-size:15px;line-height:1.5;margin-bottom:10px;color:#e6eef6;white-space:pre-wrap}
+    .reactions{display:flex;gap:8px;align-items:center}
+    .reaction{display:flex;gap:6px;align-items:center;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);cursor:pointer}
+    .reaction .count{font-size:13px;color:var(--muted)}
+
+    /* Right column */
+    .right h3{margin:0 0 10px 0;color:var(--muted)}
+    .ai-panel{padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));}
+    .small{font-size:13px;color:var(--muted)}
+
+    /* modals */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(3,6,15,0.6);display:flex;align-items:center;justify-content:center}
+    .modal{background:var(--card);padding:18px;border-radius:12px;max-width:720px;width:100%}
+
+    footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
+
+    @media (max-width:1000px){
+      .app{grid-template-columns:1fr;}
+      .right{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Channels -->
+    <aside class="panel channels">
+      <div class="brand"><div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--success));display:flex;align-items:center;justify-content:center;font-weight:800">LS</div>
+        <div>
+          <h1>The Lantern Space</h1>
+          <p class="small">A safe anonymous sanctuary</p>
+        </div>
+      </div>
+
+      <h2>Channels</h2>
+      <div id="channelList">
+        <div class="channel active" data-channel="confess-here"><div class="emoji">🌙</div><div>confess-here</div></div>
+        <div class="channel" data-channel="comfort-zone"><div class="emoji">🫧</div><div>comfort-zone</div></div>
+        <div class="channel" data-channel="letters-i-never-sent"><div class="emoji">💭</div><div>letters-i-never-sent</div></div>
+        <div class="channel" data-channel="quiet-corner"><div class="emoji">🕯️</div><div>quiet-corner</div></div>
+      </div>
+
+      <hr style="border:0;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0">
+      <p class="small">You're anonymous — your text, not your identity.
+      If you see misuse, use the <strong>Report</strong> gateway.</p>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn" id="newPostBtn">Vent now</button>
+        <button class="btn ghost" id="openReport">Report</button>
+      </div>
+
+      <footer>
+        <div style="margin-top:12px">If you're in crisis, please reach out to a crisis helpline.</div>
+      </footer>
+    </aside>
+
+    <!-- MIDDLE: Feed -->
+    <main class="panel feed">
+      <div class="header">
+        <div>
+          <h2 style="margin:0">Welcome to The Lantern Space</h2>
+          <div class="small" style="margin-top:6px;color:var(--muted)">A sanctuary where light guides you through darkness. Share anonymously.</div>
+        </div>
+        <div class="small">Viewing: <span id="currentChannel">confess-here</span></div>
+      </div>
+
+      <div class="compose" id="composeBox">
+        <div class="anon">Anonymous</div>
+        <textarea id="composeText" rows="3" placeholder="Write something you need to let out... (completely anonymous)"></textarea>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          <button class="btn" id="postBtn">Post</button>
+          <button class="btn ghost" id="aiSuggest">AI help</button>
+        </div>
+      </div>
+
+      <div style="margin-top:14px" id="feed"></div>
+    </main>
+
+    <!-- RIGHT: Info & AI -->
+    <aside class="panel right">
+      <div class="ai-panel">
+        <h3>AI Support</h3>
+        <p class="small">Powered by your AI agent — helps rephrase posts, suggest kinder responses, or detect risky content. (Connect your backend)</p>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn ghost" id="rephraseBtn">Rephrase</button>
+          <button class="btn" id="suggestBtn">Suggest Reply</button>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005))">
+        <h3 style="margin:0">How to use</h3>
+        <p class="small" style="margin-top:8px">Post honestly. React with support. If someone misuses the app (spam, hate, threats), open the Report gateway; repeated misuse triggers a temporary block.</p>
+      </div>
+
+      <div style="margin-top:12px"><button class="btn ghost" id="viewGuidelines">Community Guidelines</button></div>
+    </aside>
+  </div>
+
+  <!-- MODALS: report, guidelines, ai -->
+  <template id="postTemplate">
+    <div class="post">
+      <div class="meta"><div class="anon">Anonymous</div><div class="time">just now</div></div>
+      <div class="content"></div>
+      <div class="reactions">
+        <div class="reaction" data-kind="heart">❤️ <div class="count">0</div></div>
+        <div class="reaction" data-kind="hug">🤗 <div class="count">0</div></div>
+        <div class="reaction" data-kind="support">🕯️ <div class="count">0</div></div>
+        <div style="flex:1"></div>
+        <div class="small" style="color:var(--muted);">Channel: <span class="pc">confess-here</span></div>
+      </div>
+    </div>
+  </template>
+
+  <div id="modalArea"></div>
+
+  <script>
+    // Simple in-browser implementation to prototype the interface.
+    // NOTE: For production you should connect posts to a server and enforce moderation and real anonymity server-side.
+
+    const state = {channel:'confess-here', posts: JSON.parse(localStorage.getItem('lantern_posts')||'[]')};
+
+    // Utilities
+    const t = (s)=>document.getElementById(s);
+
+    function save(){localStorage.setItem('lantern_posts', JSON.stringify(state.posts))}
+
+    function timeAgo(ts){
+      const d = Math.floor((Date.now()-ts)/1000);
+      if(d<60) return d+'s';
+      if(d<3600) return Math.floor(d/60)+'m';
+      if(d<86400) return Math.floor(d/3600)+'h';
+      return new Date(ts).toLocaleString();
+    }
+
+    function safeTextNodesFrom(html){
+      // Creates a DocumentFragment with text nodes so we never inject HTML via innerHTML.
+      const frag = document.createDocumentFragment();
+      const lines = String(html).split('\n');
+      for(const line of lines){
+        frag.appendChild(document.createTextNode(line));
+        frag.appendChild(document.createElement('br'));
+      }
+      // remove trailing <br>
+      if(frag.lastChild) frag.removeChild(frag.lastChild);
+      return frag;
+    }
+
+    function renderFeed(){
+      const feed = t('feed'); feed.innerHTML='';
+      const posts = state.posts.filter(p => p.channel === state.channel).sort((a,b)=>b.ts-a.ts);
+      if(posts.length===0){
+        const empty = document.createElement('div');
+        empty.style.color = 'var(--muted)'; empty.style.padding='24px'; empty.style.textAlign='center';
+        empty.textContent = 'No posts yet — be the first to vent.';
+        feed.appendChild(empty);
+        return;
+      }
+      for(const p of posts){
+        const tpl = document.getElementById('postTemplate').content.cloneNode(true);
+        tpl.querySelector('.content').textContent = p.text; // safe insertion
+        tpl.querySelector('.time').textContent = timeAgo(p.ts);
+        tpl.querySelector('.pc').textContent = p.channel;
+        const postEl = tpl.firstElementChild;
+        // attach reaction handlers
+        postEl.querySelectorAll('.reaction').forEach(r=>{
+          const kind = r.dataset.kind;
+          const countNode = r.querySelector('.count');
+          countNode.textContent = p.reactions && p.reactions[kind] ? p.reactions[kind] : 0;
+          r.addEventListener('click',()=>{
+            p.reactions = p.reactions || {};
+            p.reactions[kind] = (p.reactions[kind]||0)+1;
+            save(); renderFeed();
+          })
+        })
+        feed.appendChild(postEl);
+      }
+    }
+
+    // Channel switching
+    document.querySelectorAll('.channel').forEach(c=>c.addEventListener('click', ()=>{
+      document.querySelectorAll('.channel').forEach(n=>n.classList.remove('active'));
+      c.classList.add('active');
+      state.channel = c.dataset.channel; t('currentChannel').textContent = state.channel; renderFeed();
+    }))
+
+    // Post flow with a tiny content-check gateway
+    function containsBanWords(text){
+      const bans = ['suicide','kill','bomb','attack','shut up','die']; // prototype list — expand server-side
+      const lc = String(text).toLowerCase();
+      return bans.some(b=>lc.includes(b));
+    }
+
+    t('postBtn').addEventListener('click', ()=>{
+      const text = t('composeText').value.trim();
+      if(!text) return alert('Write something before posting.');
+      // Gateway for misuse: basic client-side check — production must use server-side moderation + rate limits.
+      if(containsBanWords(text)){
+        openReportModal({reason:'Potentially harmful content detected. This post is held for review.'});
+        return;
+      }
+      const post = {id:Math.random().toString(36).slice(2),channel:state.channel,text,ts:Date.now(),reactions:{}};
+      state.posts.push(post); save(); t('composeText').value=''; renderFeed();
+    })
+
+    // New Post button focuses compose
+    t('newPostBtn').addEventListener('click', ()=>{t('composeText').focus()})
+
+    // Simple AI placeholders — in production call your AI agent endpoint
+    t('aiSuggest').addEventListener('click', ()=>{
+      const txt = t('composeText').value.trim();
+      if(!txt) return alert('Write something first to get AI help.');
+      openAIModal(txt);
+    })
+
+    t('rephraseBtn').addEventListener('click', ()=>{
+      const txt = t('composeText').value.trim();
+      if(!txt) return alert('Write something first.');
+      openAIModal(txt, true);
+    })
+
+    // Helper to create modal with DOM-safe content (avoid innerHTML with user content)
+    function createModal(){
+      const md = document.createElement('div'); md.className = 'modal-backdrop';
+      const box = document.createElement('div'); box.className = 'modal';
+      md.appendChild(box);
+      return {md,box};
+    }
+
+    // Report modal — gateway for misuse management
+    function openReportModal(detail){
+      const {md,box} = createModal();
+      const h = document.createElement('h3'); h.textContent = 'Report / Review'; box.appendChild(h);
+      if(detail && detail.reason){
+        const p = document.createElement('p'); p.className='small'; p.textContent = detail.reason; box.appendChild(p);
+      }
+      const p2 = document.createElement('p'); p2.className='small'; p2.textContent = 'If this content is abusive, hateful, or dangerous, it will be held and reviewed. Confirm you want to submit for review.'; box.appendChild(p2);
+      const controls = document.createElement('div'); controls.style.display='flex'; controls.style.gap='8px'; controls.style.justifyContent='flex-end'; controls.style.marginTop='12px';
+      const btnCancel = document.createElement('button'); btnCancel.className='btn ghost'; btnCancel.textContent='Cancel';
+      const btnConfirm = document.createElement('button'); btnConfirm.className='btn'; btnConfirm.textContent='Submit for Review';
+      controls.appendChild(btnCancel); controls.appendChild(btnConfirm); box.appendChild(controls);
+      document.body.appendChild(md);
+      btnCancel.addEventListener('click', ()=>md.remove());
+      btnConfirm.addEventListener('click', ()=>{ md.remove(); alert('Submitted to review queue. Repeated misuse triggers temporary blocks.'); });
+    }
+
+    t('openReport').addEventListener('click', ()=>openReportModal({reason:'Manually opened report gateway.'}))
+
+    // AI modal prototype — builds nodes safely
+    function openAIModal(text, rephrase=false){
+      const {md,box} = createModal();
+      const h = document.createElement('h3'); h.textContent = rephrase ? 'AI Rephrase' : 'AI Assistant'; box.appendChild(h);
+      const p = document.createElement('p'); p.className='small'; p.textContent = 'This demo shows how your AI agent could help. Connect your server to produce real suggestions.'; box.appendChild(p);
+      const wrapper = document.createElement('div'); wrapper.style.marginTop='10px';
+      const ta = document.createElement('textarea'); ta.id='aiArea'; ta.rows = 6; ta.style.width='100%'; ta.style.padding='10px'; ta.style.borderRadius='8px'; ta.style.border='0'; ta.style.background='rgba(255,255,255,0.02)'; ta.style.color='inherit';
+      ta.value = text;
+      wrapper.appendChild(ta); box.appendChild(wrapper);
+      const controls = document.createElement('div'); controls.style.display='flex'; controls.style.gap='8px'; controls.style.justifyContent='flex-end'; controls.style.marginTop='10px';
+      const btnCancel = document.createElement('button'); btnCancel.className='btn ghost'; btnCancel.textContent='Cancel';
+      const btnApply = document.createElement('button'); btnApply.className='btn'; btnApply.textContent='Replace Post';
+      controls.appendChild(btnCancel); controls.appendChild(btnApply); box.appendChild(controls);
+      document.body.appendChild(md);
+      btnCancel.addEventListener('click', ()=>md.remove());
+      btnApply.addEventListener('click', ()=>{ t('composeText').value = ta.value; md.remove(); });
+    }
+
+    // View guidelines modal
+    t('viewGuidelines').addEventListener('click', ()=>{
+      const {md,box} = createModal();
+      const h = document.createElement('h3'); h.textContent = 'Community Guidelines'; box.appendChild(h);
+      const ol = document.createElement('ol'); ol.style.color = 'var(--muted)';
+      const items = [
+        'Be kind. Support without judgement.',
+        'No personal attacks, doxxing, or hateful content.',
+        'No instructions for self-harm or illegal activity. These posts are flagged.',
+        'Abuse of anonymity (spam, harassment) may lead to temporary app-level blocks.'
+      ];
+      for(const it of items){ const li = document.createElement('li'); li.textContent = it; ol.appendChild(li); }
+      box.appendChild(ol);
+      const controls = document.createElement('div'); controls.style.display='flex'; controls.style.justifyContent='flex-end'; controls.style.marginTop='12px';
+      const closeBtn = document.createElement('button'); closeBtn.className='btn'; closeBtn.textContent='Close'; controls.appendChild(closeBtn); box.appendChild(controls);
+      document.body.appendChild(md);
+      closeBtn.addEventListener('click', ()=>md.remove());
+    })
+
+    // Initialize
+    renderFeed();
+
+    // On first visit, add sample posts to demonstrate interface (only once)
+    if(!localStorage.getItem('lantern_demo')){
+      // added extra test cases (sample posts) to ensure multiple channels and content variations
+      state.posts.push({id:'d1',channel:'confess-here',text:"I keep putting on a brave face, but I'm exhausted.",ts:Date.now()-1000*60*60,reactions:{heart:3,hug:1}});
+      state.posts.push({id:'d2',channel:'comfort-zone',text:'Anyone want to share how they cope with anxiety during exams?',ts:Date.now()-1000*60*20,reactions:{hug:2}});
+      state.posts.push({id:'d3',channel:'letters-i-never-sent',text:'To the person I never told: thank you for staying even when I pulled away.',ts:Date.now()-1000*60*60*5,reactions:{heart:1}});
+      state.posts.push({id:'d4',channel:'quiet-corner',text:'Sometimes silence is the only thing that helps me breathe.',ts:Date.now()-1000*60*30,reactions:{support:2}});
+      save(); localStorage.setItem('lantern_demo','1'); renderFeed();
+    }
+  </script>
+</body>
+</html>

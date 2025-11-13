@@ -1,9 +1,0 @@
-server/
-  index.js
-  db.js
-  migrate.js
-  moderation.js
-  package.json
-  .env.example
-admin/
-  index.html

@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lantern Admin</title>
+  <style>
+    body{font-family:Inter,system-ui,Arial;background:#071022;color:#e6eef6;padding:18px}
+    .card{background:#0f1724;padding:12px;border-radius:8px;margin-bottom:10px}
+    button{margin:4px;padding:8px;border-radius:6px;border:0;background:#f78764;color:#071022;font-weight:600;cursor:pointer}
+    .muted{color:#9aa4b2;font-size:13px}
+  </style>
+</head>
+<body>
+  <h1>Lantern — Admin</h1>
+  <p class="muted">Enter admin password (set ADMIN_USER & ADMIN_PASS on server / Render).</p>
+  <input id="user" placeholder="username" style="padding:8px;margin-right:8px" value="admin" />
+  <input id="pass" type="password" placeholder="password" style="padding:8px;margin-right:8px" />
+  <button id="login">Login</button>
+  <hr />
+  <div id="controls" style="display:none">
+    <button id="refresh">Refresh Posts</button>
+    <button id="export">Export JSON</button>
+    <div id="posts"></div>
+  </div>
+
+<script>
+const API_BASE = window.API_BASE || '';
+let authHeader = null;
+
+function b64(s){ return btoa(s); }
+function headers(){ return { 'Content-Type':'application/json', 'Authorization': authHeader }; }
+
+document.getElementById('login').addEventListener('click', ()=>{
+  const user = document.getElementById('user').value;
+  const pass = document.getElementById('pass').value;
+  authHeader = 'Basic ' + b64(user + ':' + pass);
+  document.getElementById('controls').style.display='block';
+  refresh();
+});
+
+async function refresh(){
+  const res = await fetch(API_BASE + '/api/admin/posts', { headers: headers() });
+  if(res.status===401){ alert('unauthorized - wrong creds'); return; }
+  const posts = await res.json();
+  const container = document.getElementById('posts'); container.innerHTML='';
+  for(const p of posts){
+    const el = document.createElement('div'); el.className='card';
+    el.innerHTML = `<div class="muted">${p.channel} — ${p.id} — ${p.state} — ${new Date(p.ts).toLocaleString()}</div>
+                    <div style="margin-top:6px">${escapeHtml(p.text)}</div>`;
+    const btnPub = document.createElement('button'); btnPub.textContent='Publish'; btnPub.onclick = ()=>patch(p.id,{state:'published'});
+    const btnHold = document.createElement('button'); btnHold.textContent='Hold'; btnHold.onclick = ()=>patch(p.id,{state:'held'});
+    const btnDel = document.createElement('button'); btnDel.textContent='Delete'; btnDel.onclick = ()=>del(p.id);
+    const btnEdit = document.createElement('button'); btnEdit.textContent='Edit'; btnEdit.onclick = ()=>{ const t = prompt('Edit text', p.text); if(t!=null) patch(p.id,{text:t}); };
+    el.appendChild(btnPub); el.appendChild(btnHold); el.appendChild(btnEdit); el.appendChild(btnDel);
+    container.appendChild(el);
+  }
+}
+
+async function patch(id, body){
+  const res = await fetch(API_BASE + '/api/admin/posts/' + id, { method:'PATCH', headers: headers(), body: JSON.stringify(body) });
+  if(res.status===401){ alert('unauthorized'); return; }
+  refresh();
+}
+async function del(id){
+  if(!confirm('Delete post?')) return;
+  await fetch(API_BASE + '/api/admin/posts/' + id, { method:'DELETE', headers: headers() });
+  refresh();
+}
+function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+document.getElementById('refresh').addEventListener('click', refresh);
+document.getElementById('export').addEventListener('click', ()=>{ window.location = API_BASE + '/api/admin/export'; });
+</script>
+</body>
+</html>
